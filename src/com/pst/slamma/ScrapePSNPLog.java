@@ -21,7 +21,7 @@ public class ScrapePSNPLog {
 
     public List<Trophy> trophiesFromLog(String psn, int firstLog, int lastLog) {
         List<Trophy> all_trophies = new ArrayList<>();
-        int page = 0;
+        int page = 1;
         return trophiesFromLog(psn, firstLog, lastLog, all_trophies, page);
     }
 
@@ -33,7 +33,7 @@ public class ScrapePSNPLog {
         int current_log_num;
         Element current_tile_type;
         String url;
-        if (page == 0) {
+        if (page == 1) {
             url = "https://psnprofiles.com/" + psn + "/log";
         }
         else {
