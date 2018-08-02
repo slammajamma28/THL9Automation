@@ -1,7 +1,5 @@
 package com.pst.slamma;
 
-import org.apache.commons.lang3.time.StopWatch;
-
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -14,8 +12,6 @@ import java.util.concurrent.TimeUnit;
 public class THLAutomation {
 
     public static void main (String args[]) {
-        StopWatch stopwatch = new StopWatch();
-        stopwatch.start();
         List<PSTMember> team_members = new ArrayList<>();
         List<THLTeam> thl_teams = new ArrayList<>();
         List<PSTMember> all_members = new ArrayList<>();
@@ -98,9 +94,6 @@ public class THLAutomation {
         uniqueGames.checkGameCompletions();
 
         System.out.println("\n ********************* \n");
-
-        stopwatch.stop();
-        System.out.println(stopwatch.getTime(TimeUnit.MILLISECONDS) + " ms elapsed");
     }
 
 }
