@@ -1,0 +1,137 @@
+Progression since last video:
+
+Thought through everything, extra automation isn't feasible with amount of time I have left
+
+Added backlog-esque 90s trophies check
+    Participants submit completed 90s trophies
+    Code checks that the game is on the list then counts the THL trophies
+    Output to CSV
+
+Need to do:
+
+*** If PST name == PSN name, don't print it twice on BBCode output
+
+Add backlog-esque completed games check
+
+**** Check the game IDs first against the 90s list, then use each line as the incremental for 90s game trophies
+**** then continue on with the unique games completed check
+
+90s trophies
+	Pull ID of game from PSNP
+	If it matches one of the many, go to that PSNP.com\psn page and pull number of trophies based on time stamp
+
+90 unique games
+	Pull ID of game from PSNP
+	Compare with 5 other teammates, count uniques
+	
+*** HOW WILL I PULL THIS INFO ***
+
+Add more column to participant_list: last log processed, 90s games count
+each day, I will pull the URLs of trophies from completed games, but only save the unique IDs/URLs (ingore any line that contains <a class="dlc-icon")
+Then after each person is complete, I will open that the page for each game and check the "base game" percentage
+If it is 100%, I will add it to the "completed" game list of that person and export it to a CSV for further processing 
+	Checking unique IDs against teammates
+Each new completed game will also get compared against the 90s games ID and 90s games count will be incrememted
+--- but how do i get the "last log" and "90s count" back into the participants list?
+
+
+
+Possibility of trophy-level stats
+	I was thinking about this and I may have to do the  individual trophy pull after the event completes
+	since the rarity_type level may change drastically during the event...
+
+Add PSNTL identifier for basic info pulls
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Added Export Data option to allow me to save off all the daily information into a spreadsheet
+    Team totals
+    Daily individual numbers
+Added platinum leaderboard
+
+
+Fixed Platinum leaderboard, I realized it was printing PSTName (PSTName)
+Added Inter-team LB
+Realized I can't add version control.
+    Not that I can't, but that I don't have the GitHub plan that would allow me to hide it.
+ Added PSNTL basic info scraping
+
+
+Re-sort InterTeam by alphabet before BBCode
+Output leaderboard things to a file
+
+
+Set up automation to run using Task Scheduler, did it on main computer and not on spare laptop yet.
+    Seems to work well (so long as I have the laptop open)
+
+Added ScrapePSNPLog class
+    This will allow me to gather games being played
+Added ScrapePSNPGamePage
+    This will allow me to check if the game has been completed or not
+
+Subscriber info output - added * next to individual trophy LB if member has reached 470. Average is 469.08
+	
+
+
+THLTeam
+    Team Name
+    Members:
+        A
+            Total Trophies
+            Individual Rank
+        B
+        C
+        D
+        E
+        F
+     Total Trophies
+     Rank
+
+PSN Level
+Total Trophies
+Total Gold
+Total Silver
+Total Bronze
+
+Games Played
+Games Completed
+Completion Percentage
+Unearned Trophies
+Trophies Per Day
+World Rank
+Country Rank
+
+
+
+
+Seasons 1-3
+Teams of 4. 2-month regluar season. 2 weeks of playoffs (top 4 teams). Individual Platinum count not tracked.
+Season 4
+Teams of 4. 2-month regular season. 2 weeks of playoffs (top 4 teams). Platinum count tracking begins for this season and all subsequent seasons.
+Season 5
+Teams of 4. 2-month regular season. No playoffs. PST vs XBA!
+Season 6
+Teams of 6. 2-month regular season. 2 weeks of playoffs (top 4 teams). Olsen's secret list!
+Season 7
+Teams of 6. 2-month regular season. No playoffs. Bingo!
+Season 8
+Teams of 6. 1-month regular season. No playoffs. 3rd Award! 
+
+Average Trophies Per Individual - Season 1: 534.58
+	Adjusted: 267.29
+Average Trophies Per Individual - Season 2: 411.11
+	Adjusted: 205.56
+Average Trophies Per Individual - Season 3: 554.23
+	Adjusted: 277.12
+Average Trophies Per Individual - Season 4: 422.39
+	Adjusted: 211.20
+Average Trophies Per Individual - Season 5: 522.88
+	Adjusted: 261.44
+Average Trophies Per Individual - Season 6: 466.03
+	Adjusted: 233.02
+Average Trophies Per Individual - Season 7: 492.33
+	Adjusted: 246.16
+Average Trophies Per Individual - Season 8: 525.11
+	Adjusted: 525.11
+	
+	Adjusted Avg = 278.36
