@@ -91,8 +91,8 @@ public class ScrapePSNPLog {
 
             // Trophy Title and Description
             Element title_desc = info_things.getElement(2);
-            String title = title_desc.findFirst("<a>").getText();
-            String desc = title_desc.getText().trim();
+            String title = title_desc.findFirst("<a>").getChildText();
+            String desc = title_desc.getChildText().trim();
 //            System.out.println("Title = " + title);
 //            System.out.println("Desc = " + desc);
             trophy.setTrophy_title(title);
@@ -105,8 +105,8 @@ public class ScrapePSNPLog {
 
             // Time stamp
             Element datestamp = info_things.getElement(5);
-            String trophy_date = datestamp.findFirst("<span class='typo-top-date'>").findFirst("<nobr>").getText().trim();
-            String trophy_time = datestamp.findFirst("<span class='typo-bottom-date'>").findFirst("<nobr>").getText().trim();
+            String trophy_date = datestamp.findFirst("<span class='typo-top-date'>").findFirst("<nobr>").getChildText().trim();
+            String trophy_time = datestamp.findFirst("<span class='typo-bottom-date'>").findFirst("<nobr>").getChildText().trim();
 //            System.out.println("Trophy date = " + trophy_date);
 //            System.out.println("Trophy time = " + trophy_time);
             String date_stamp = trophy_date.replaceAll("st","").replaceAll("nd","").replaceAll("rd", "").replaceAll("th","").concat(" " + trophy_time);
@@ -115,20 +115,20 @@ public class ScrapePSNPLog {
 
             // Achievers
             Element achievers = info_things.getElement(6);
-            String number_achieved = achievers.findFirst("<span class='typo-top'>").getText().replaceAll(",", "").trim();
+            String number_achieved = achievers.findFirst("<span class='typo-top'>").getChildText().replaceAll(",", "").trim();
 //            System.out.println("Number of achievers = " + number_achieved);
             trophy.setAchievers(Integer.parseInt(number_achieved));
 
             // Owners
             Element owners = info_things.getElement(7);
-            String number_owned = owners.findFirst("<span class='typo-top'>").getText().replaceAll(",", "").trim();
+            String number_owned = owners.findFirst("<span class='typo-top'>").getChildText().replaceAll(",", "").trim();
 //            System.out.println("Number of owners = " + number_owned);
             trophy.setOwners(Integer.parseInt(number_owned));
 
             // Rarity
             Element rarity = info_things.getElement(8);
-            String rarity_percent = rarity.findFirst("<span class='typo-top'>").getText();
-            String rarity_type = rarity.findFirst("<span class='typo-bottom'>").findFirst("<nobr>").getText();
+            String rarity_percent = rarity.findFirst("<span class='typo-top'>").getChildText();
+            String rarity_type = rarity.findFirst("<span class='typo-bottom'>").findFirst("<nobr>").getChildText();
 //            System.out.println("Rarity = " + rarity_percent + " (" + rarity_type + ")");
             trophy.setRarity_type(rarity_type);
             trophy.setRarity_percentage(Double.parseDouble(rarity_percent.replaceAll("%", "")));
@@ -207,7 +207,8 @@ public class ScrapePSNPLog {
                     trophies = test.trophiesFromLog(psn, 7577, 8079);
                     System.out.println("Printing to file for " + psn);
                     for (Trophy trophy : trophies) {
-                        test.writeToFile(trophy, psn);
+//                        test.writeToFile(trophy, psn);
+                        test.printTrophy(trophy);
                         if (! games.contains(trophy.getGame_id())) {
                             games.add(trophy.getGame_id());
                         }
@@ -225,15 +226,17 @@ public class ScrapePSNPLog {
 //                e.printStackTrace();
 //        }
     }
+
+    public void printTrophy(Trophy trophy) {
+        System.out.println("Game ID #" + trophy.getGame_id());
+        System.out.println("Trophy title: " + trophy.getTrophy_title());
+        System.out.println("Trophy description: " + trophy.getTrophy_description());
+        System.out.println("Log number: " + trophy.getLog_num());
+        System.out.println("Trophy timestamp: " + trophy.getTimestamp());
+        System.out.println("Trophy achievers: " + trophy.getAchievers());
+        System.out.println("Game owners: " + trophy.getOwners());
+        System.out.println("Trophy rarity: " + trophy.getRarity_percentage() + " (" + trophy.getRarity_type() + ")");
+        System.out.println("Trophy value: " + trophy.getTrophy_value());
+        System.out.println("\n *************************** \n ");
+    }
 }
-
-
-//            System.out.println("Game ID #" + trophy.getGame_id());
-//            System.out.println("Trophy title: " + trophy.getTrophy_title());
-//            System.out.println("Trophy description: " + trophy.getTrophy_description());
-//            System.out.println("Log number: " + trophy.getLog_num());
-//            System.out.println("Trophy timestamp: " + trophy.getTimestamp());
-//            System.out.println("Trophy achievers: " + trophy.getAchievers());
-//            System.out.println("Game owners: " + trophy.getOwners());
-//            System.out.println("Trophy rarity: " + trophy.getRarity_percentage() + " (" + trophy.getRarity_type() + ")");
-//            System.out.println("Trophy value: " + trophy.getTrophy_value());
