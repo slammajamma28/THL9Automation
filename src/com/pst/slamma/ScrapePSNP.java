@@ -38,12 +38,12 @@ public class ScrapePSNP {
             e.printStackTrace();
         }
 
-        result.add(Integer.parseInt(psnLevel.getText().trim()));
-        result.add(Integer.parseInt(totalT.getText().trim().replaceAll(",","")));
-        result.add(Integer.parseInt(platinumT.getText().trim().replaceAll(",","")));
-        result.add(Integer.parseInt(goldT.getText().trim().replaceAll(",","")));
-        result.add(Integer.parseInt(silverT.getText().trim().replaceAll(",","")));
-        result.add(Integer.parseInt(bronzeT.getText().trim().replaceAll(",","")));
+        result.add(Integer.parseInt(psnLevel.getChildText().trim()));
+        result.add(Integer.parseInt(totalT.getChildText().trim().replaceAll(",","")));
+        result.add(Integer.parseInt(platinumT.getChildText().trim().replaceAll(",","")));
+        result.add(Integer.parseInt(goldT.getChildText().trim().replaceAll(",","")));
+        result.add(Integer.parseInt(silverT.getChildText().trim().replaceAll(",","")));
+        result.add(Integer.parseInt(bronzeT.getChildText().trim().replaceAll(",","")));
 
         return result;
     }
