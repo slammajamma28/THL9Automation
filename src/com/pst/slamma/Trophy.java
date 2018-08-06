@@ -15,6 +15,7 @@ public class Trophy {
     public double rarity_percentage;
     public String trophy_value;
     public LocalDateTime audit_timestamp;
+    public String game_url;
 
     public Trophy() {
         this.audit_timestamp = LocalDateTime.now();
@@ -103,4 +104,8 @@ public class Trophy {
     public double getRarity_percentage() { return rarity_percentage; }
 
     public void setRarity_percentage(double rarity_percentage) { this.rarity_percentage = rarity_percentage; }
+
+    public String getGame_url() { return game_url; }
+
+    public void setGame_url(String game_url) { this.game_url = game_url; }
 }
