@@ -59,7 +59,7 @@ public class ScrapePSNPLog {
                     return all_trophies;
                 } else {
 //                    System.out.println("I am still on new rows, continue");
-                    all_trophies.add(getTrophyInfo(row));
+                    all_trophies.add(getTrophyInfo(row, psn));
                 }
             }
             trophiesFromLog(psn, firstLog, lastLog, all_trophies, ++page);
@@ -70,7 +70,7 @@ public class ScrapePSNPLog {
         return all_trophies;
     }
 
-    private Trophy getTrophyInfo(Element row) {
+    private Trophy getTrophyInfo(Element row, String psn) {
         Trophy trophy = new Trophy();
         Element e_current_url;
         String current_url;
@@ -88,6 +88,8 @@ public class ScrapePSNPLog {
             current_game_id = Integer.parseInt(tmp_splt.get(0));
 //            System.out.println("Game ID = " + current_game_id);
             trophy.setGame_id(current_game_id);
+            trophy.setGame_url(current_url.replaceAll(psn,""));
+//            games.add(new Game(current_game_id, current_url.replaceAll(psn, "")));
 
             // Trophy Title and Description
             Element title_desc = info_things.getElement(2);
@@ -163,9 +165,9 @@ public class ScrapePSNPLog {
 //        }
 //        return total_ninties_trophies;
 //    }
-    private void writeToFile(Trophy trophy, String user) {
+    private void writeToFile(Trophy trophy, String user, String team) {
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("MM-dd");
-        String filename = ".\\overall\\" + user + ".csv";
+        String filename = ".\\overall\\" + team + "\\" + user + ".csv";
         File newFile = new File(filename);
         try {
             if (!newFile.exists()) {
@@ -174,7 +176,7 @@ public class ScrapePSNPLog {
             FileWriter fw = new FileWriter(filename,true);
             fw.write(trophy.getGame_id() + "|" + trophy.getTrophy_title() + "|" +
                         trophy.getTrophy_description() + "|" + trophy.getLog_num() + "|" +
-                        trophy.getTimestamp() + "|" + trophy.getAchievers() + "|" +
+                        trophy.getTimestamp().format(DATE_FORMAT) + "|" + trophy.getAchievers() + "|" +
                         trophy.getOwners() + "|" + trophy.getRarity_percentage() + "|" +
                         trophy.getRarity_type() + "|" + trophy.getTrophy_value());
             fw.write("\n");
@@ -186,10 +188,13 @@ public class ScrapePSNPLog {
 
     public static void main (String args[]){
         ScrapePSNPLog test = new ScrapePSNPLog();
+//        List<Game> games = new ArrayList<>();
         String psn = "slammajamma28";
+        String team = "Dabaholics Anonymous";
         // Slamma,slammajamma28,Dabaholics Anonymous,7577,104
         List<Trophy> trophies = new ArrayList<>();
-        List<Integer> games = new ArrayList<>();
+        List<Integer> game_ids = new ArrayList<>();
+        List<Game> games = new ArrayList<>();
         String line;
 //        try {
 //            FileReader fr = new FileReader("participant_list");
@@ -200,6 +205,7 @@ public class ScrapePSNPLog {
 //                } else {
 //                    List<String> id = Arrays.asList(line.split(","));
 //                    String psn = id.get(1);
+//                    String team = id.get(2).replaceAll(":","").replaceAll("?","");
 //                    int last_log = Integer.parseInt(id.get(3));
 //                    int first_log = Integer.parseInt(id.get(4));
                     System.out.println("Pulling log info for " + psn);
@@ -207,16 +213,20 @@ public class ScrapePSNPLog {
                     trophies = test.trophiesFromLog(psn, 7577, 8079);
                     System.out.println("Printing to file for " + psn);
                     for (Trophy trophy : trophies) {
-//                        test.writeToFile(trophy, psn);
+//                        test.writeToFile(trophy, psn, team);
                         test.printTrophy(trophy);
-                        if (! games.contains(trophy.getGame_id())) {
-                            games.add(trophy.getGame_id());
+                        if (! game_ids.contains(trophy.getGame_id())) {
+                            game_ids.add(trophy.getGame_id());
+                            games.add(new Game(trophy.getGame_id(), trophy.getGame_url()));
                         }
                     }
                     System.out.println("\nNumber of unique games played by " + psn + ": " + games.size() + "\n");
-                    for (int game : games) {
-                        System.out.println(game);
+                    for (Game game : games) {
+                        System.out.println(game.getUrl());
                     }
+
+                    ScrapePSNPProfile scrapePSNPProfile = new ScrapePSNPProfile();
+                    scrapePSNPProfile.checkForTHLGames(games, psn);
 
                     System.out.println("\n****************************\n");
                     trophies = null;
