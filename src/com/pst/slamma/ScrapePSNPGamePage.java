@@ -1,23 +1,20 @@
 package com.pst.slamma;
 
-import com.jaunt.Element;
-import com.jaunt.Elements;
-import com.jaunt.NotFound;
-import com.jaunt.UserAgent;
+import com.jaunt.*;
+import com.jaunt.component.Table;
 
 import java.time.LocalDateTime;
 import java.time.Month;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 public class ScrapePSNPGamePage {
 
-    private List<Integer> NINETIES_GAME_ID = Arrays.asList(992, 6245, 6246, 6247);
     private DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("d MMM yyyy h:mm:ss a");
     private LocalDateTime NOW = LocalDateTime.now();
-//    private Month JULY = Month.JULY;
-    private Month JULY = Month.APRIL;
+    private Month JULY = Month.JULY;
 
     public boolean isGameComplete(int game_id, String psn) {
         Element main_area;
@@ -60,63 +57,199 @@ public class ScrapePSNPGamePage {
         return false;
     }
 
-    public int countNintiesTrophies(int game_id, String psn) {
-        int earned_trophies = 0;
-
-        Element main_area;
-        Elements trophies_complete;
-        String url = "https://psnprofiles.com/trophies/" + game_id + "/" + psn;
-
-        //Begin jaunt stuff
+    public Game pullGameInfo(Game game, String psn) {
+        UserAgent userAgent = new UserAgent();
+        Element stat_bar, game_name_bar, game_info_box, backlog_box;
+        Elements trophies;
+        Table backlog_table;
         try {
-            UserAgent userAgent = new UserAgent();
-            userAgent.visit(url);
+            userAgent.visit(game.getUrl() + psn + "?order=date");
+        } catch (ResponseException re) {
+            System.out.println("ERROR: Could not reach " + game.getUrl());
+        }
 
-            // Check for platinum in main bar
-            main_area = userAgent.doc.findFirst("<div class='col-xs'>");
-            trophies_complete = main_area.findEvery("<tr class='completed'>");
+        try {
+            stat_bar = userAgent.doc.findFirst("<div class='stats flex'>");
+            try {
+                Elements stats_elements = stat_bar.findEach("<span class='stat grow'>");
+                game.setGame_owners(Integer.parseInt(stats_elements.getElement(0).getChildText().replaceAll(",","")));
+                try {
+                    if (stats_elements.getElement(2).findFirst("<span>").getChildText().startsWith("Platinum")) {
+                        game.setPlat_game(true);
+                    } else {
+                        game.setPlat_game(false);
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    game.setPlat_game(false);
+                }
+            } catch (NotFound nfe2) {
+                game.setGame_owners(0);
+            } catch (Exception e) {
+                e.printStackTrace();
+                game.setGame_owners(0);
+            }
+        } catch (NotFound nfe) {
+            System.out.println("ERROR: Could not pull stats bar for " + game.getUrl());
+        }
 
-            for (Element trophy : trophies_complete) {
-                Element datestamp = trophy.findFirst("<span class='typo-top-date'>");
-                Element timestamp = trophy.findFirst("<span class='typo-bottom-date'>");
-                String date_stamp = datestamp.innerText().trim()
-                        .replaceAll("st","").replaceAll("nd","").replaceAll("rd", "").replaceAll("th","");
+        try {
+            game_name_bar = userAgent.doc.findFirst("<div class='title-bar flex v-align'>")
+                    .findFirst("<div class='grow'>")
+                    .findFirst("<h3>");
+            try {
+                game.setGame_name(game_name_bar.getChildText());
+            } catch (Exception e) {
+                game.setGame_name("ISSUE FINDING NAME");
+            }
+        } catch (NotFound nfe) {
+            game.setGame_name("ISSUE FINDING NAME");
+        } catch (Exception e) {
+            game.setGame_name("ISSUE FINDING NAME");
+        }
 
-                String complete_stamp = date_stamp + " " + timestamp.innerText().trim();
-                LocalDateTime trophy_stamp = LocalDateTime.parse(complete_stamp, DATE_FORMAT);
+        try {
+            game_info_box = userAgent.doc.findFirst("<div class='col-xs-4 col-xs-max-320'>").findFirst("<div class='box no-top-border'>");
+            try {
+                Elements game_info = game_info_box.findEvery("<td>");
+                Elements platforms = game_info_box.findFirst("<div class='platforms'>").getEach("<span>");
+                Element total_trophies = game_info_box.findFirst("<div class='trophy-count'>").findFirst("<span class='small-info floatr'>").findFirst("<b>");
+                game.setTotal_trophies(Integer.parseInt(total_trophies.getChildText()));
+                List<String> list_platforms = new ArrayList<>();
+                for (Element platform : platforms) {
+                    list_platforms.add(platform.getChildText());
+                }
+                game.setPlatforms(list_platforms);
+            } catch (Exception e) {
+                e.printStackTrace();
+                System.out.println("ERROR: Could not pull platform for " + game.getUrl());
+            }
 
-                if (trophy_stamp.getMonth().equals(JULY)
-                        && trophy_stamp.getYear() == NOW.getYear()
-//                        && trophy_stamp.getDayOfMonth() == NOW.getDayOfMonth()
-                        ){
-                    earned_trophies++;
+//            Elements info_elements = game_info_box.findFirst("<table class='gameInfo zebra'>").findEvery("<tr>");
+//            for (Element info : info_elements) {
+//                Elements td_els = info.findEvery("<td>");
+//                switch(td_els.getElement(0).getChildText()) {
+//                    case "Developer":
+//                        game.setGame_dev(td_els.getElement(1).getChildText());
+//                        break;
+//                    case "Publisher":
+//                        game.setGame_publisher(td_els.getElement(1).getChildText());
+//                        break;
+//                    case "Genre":
+//                        game.setGame_dev(td_els.getElement(1).getChildText());
+//                        break;
+//                }
+//            }
+//            try {
+//                game.setGame_dev("Test Dev");
+////            } catch (NotFound nfe2) {
+//
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//            }
+//
+//            try {
+////                Elements pubs = game_info_box.get;
+//                game.setGame_publisher("Test Pub");
+////            } catch (NotFound nfe2) {
+//
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//            }
+//
+//            try {
+//                List<String> test = new ArrayList<>();
+//                test.add("Test Genre 1");
+//                game.setGenre(test);
+////            } catch (NotFound nfe2) {
+//
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//            }
+//            try {
+//                List<String> test = new ArrayList<>();
+//                test.add("Test Theme 1");
+//                test.add("Test Theme 2");
+//                game.setThemes(test);
+////            } catch (NotFound nfe2) {
+//
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//            }
+//            try {
+//                List<String> test = new ArrayList<>();
+//                test.add("Test Mode 1");
+//                test.add("Test Mode 2");
+//                test.add("Test Mode 3");
+//                game.setModes(test);
+////            } catch (NotFound nfe2) {
+//
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//            }
+        } catch (NotFound nfe) {
+            System.out.println("ERROR: Could not pull game info box for " + game.getUrl());
+        }
+
+//        try {
+//            backlog_box = userAgent.doc.findFirst("<div class='col-xs-4 col-xs-max-320'>").findFirst("<table class='box zebra'>");
+//            try {
+//                Elements backlog_rows = backlog_box.findEvery("<tr>");
+//                for (Element row : backlog_rows) {
+//                    Elements info = row.findEvery("<td>");
+//                    Element first_trophy =
+//                }
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//            }
+//        } catch (NotFound nfe) {
+//            System.out.println("ERROR: Could not find backlog box");
+//        }
+
+        try {
+            Element main_part =userAgent.doc.findFirst("<div class='col-xs'>").findFirst("<div class='box no-top-border'>");
+            trophies = main_part.findEvery("<tr class='completed'>");
+            Element start_date = trophies.getElement(0).findEvery("<td>").getElement(2).findEvery("<nobr>");
+//            System.out.println("Start: " + start_date.getElement(0).getChildText().trim().replaceAll("st","").replaceAll("nd","").replaceAll("rd", "").replaceAll("th","")
+//                        + " " + start_date.getElement(1).getChildText());
+            game.setStart_timestamp(start_date.getElement(0).getChildText().trim().replaceAll("st","").replaceAll("nd","").replaceAll("rd", "").replaceAll("th","")
+                        + " " + start_date.getElement(1).getChildText());
+            // End date depends on JULY month. So let's go backwards with it.
+            for (int i = trophies.size()-1; i >= 0; i--) {
+                Element end_date = trophies.getElement(i).findEvery("<td>").getElement(2).findEvery("<nobr>");
+                String tmp = end_date.getElement(0).getChildText().trim().replaceAll("st", "").replaceAll("nd", "").replaceAll("rd", "").replaceAll("th", "");
+                List<String> tmp_splt = Arrays.asList(tmp.split(" "));
+                if (tmp_splt.get(1).equals("Jul") && tmp_splt.get(2).equals("2018")) {
+//                    System.out.println("End: " + tmp + " " + end_date.getElement(1).getChildText());
+                    game.setEnd_thl_timestamp(tmp + " " + end_date.getElement(1).getChildText());
+                    i=0;
                 }
             }
 
         } catch (Exception e) {
             e.printStackTrace();
+            System.out.println("Error with trophies for " + game.getUrl());
         }
-        return earned_trophies;
+//        try {
+//            backlog_table = userAgent.doc.getTable("<table class='box zebra'>");
+//        } catch (NotFound nfe) {
+//            System.out.println("ERROR: Could not pull table for backlog time for " + game.getUrl());
+//        }
+//    private List<String> platforms;
+//    private String game_name;
+//    private int game_owners;
+//    private boolean plat_game;
+//    private String game_dev;
+//    private String game_publisher;
+//    private List<String> genre;
+//    private List<String> modes;
+        return game;
     }
 
     public static void main(String args[]) {
         ScrapePSNPGamePage test = new ScrapePSNPGamePage();
-//        System.out.println("Is this game complete? Expect true, actual " + test.isGameComplete(3154, "slammajamma28")); // true - Never Alone, not 100% but base complete
-//        System.out.println("Is this game complete? Expect true, actual " + test.isGameComplete(1932, "slammajamma28")); // true - Thomas was alone, 100% completed
-//        System.out.println("Is this game complete? Expect true, actual " + test.isGameComplete(5442, "slammajamma28")); // true - Battlefield 1, platinum not 100%
-//        System.out.println("Is this game complete? Expect false, actual " + test.isGameComplete(4784, "slammajamma28")); // false - Downwell, not platinumed
-//        System.out.println("Is this game complete? Expect false, actual " + test.isGameComplete(2814, "slammajamma28")); // false - CounterSpy, not 100%, no DLC
-//        System.out.println("Is this game complete? Expect false, actual " + test.isGameComplete(3269, "slammajamma28")); // false - Switch Galaxy Ultra, not 100% DLC included
-//        System.out.println("Is this game complete? Expect false, actual " + test.isGameComplete(2434, "slammajamma28")); // false - Rayman Legends, not complete
-//        System.out.println("Is this game complete? Expect true, actual " + test.isGameComplete(2717, "slammajamma28")); // true - Mousecraft, 100%
-//        System.out.println("Is this game complete? Expect true, actual " + test.isGameComplete(4719, "slammajamma28")); // true - Uncharted 4, platinum but not 100%
-//        System.out.println("Is this game complete? Expect true, actual " + test.isGameComplete(761, "slammajamma28"));  // true - Stacking, base 100% but not DLC
-//        System.out.println("Is this game complete? Expect true, actual " + test.isGameComplete(992, "slammajamma28"));  // true - Comix Zone, 100% - also counts as 90s game
-//        System.out.println("Is this game complete? Expect true, actual " + test.isGameComplete(124, "slammajamma28"));  // true - Wolf 3D, 100% - also counts as 90s game
-//        System.out.println("Is this game complete? Expect false, actual " + test.isGameComplete(808, "slammajamma28"));  // false - Sonic 1, not 100% - but counts as 90s game
-//        System.out.println("Is this game complete? Expect true, actual " + test.isGameComplete(3304, "slammajamma28")); // true - Grim Fangago, plat - also counts as 90s game
-//        System.out.println("Is this game complete? Expect false, actual " + test.isGameComplete(6245, "slammajamma28")); // false - Crash 1, no plat - but counts as 90s game
 
-        System.out.println("Number of 90s trophies: " + test.countNintiesTrophies(6245, "slammajamma28"));
+
+
     }
 }
