@@ -52,7 +52,7 @@ public class ScrapePSNPLog {
                 current_log_num = Integer.parseInt(e_current_log_num.innerText().trim().replaceAll("#","").replaceAll(",",""));
 //                System.out.println("Current Log: " + current_log_num);
                 if (current_log_num > lastLog) {
-                    System.out.println("We have not reached the beginning of THL trophies..." + current_log_num + " > " + firstLog);
+//                    System.out.println("We have not reached the beginning of THL trophies..." + current_log_num + " > " + firstLog);
                 }
                 else if (current_log_num == firstLog) {
 //                    System.out.println("I have reached the end of current processing, quit.");
@@ -157,17 +157,11 @@ public class ScrapePSNPLog {
 //        return return_list;
 //    }
 //
-//    public int checkForNintiesTrophies(List<Integer> games, String psn) {
-//        ScrapePSNPGamePage spgp = new ScrapePSNPGamePage();
-//        int total_ninties_trophies = 0;
-//        for (int game : games) {
-//            total_ninties_trophies =+ spgp.countNintiesTrophies(game, psn);
-//        }
-//        return total_ninties_trophies;
-//    }
-    private void writeToFile(Trophy trophy, String user, String team) {
+
+    private void writeTrophyToFile(Trophy trophy, String user, String team) {
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("MM-dd");
         String filename = ".\\overall\\" + team + "\\" + user + ".csv";
+        new File(".\\overall\\" + team).mkdirs();
         File newFile = new File(filename);
         try {
             if (!newFile.exists()) {
@@ -186,55 +180,85 @@ public class ScrapePSNPLog {
         }
     }
 
+    private void writeGameToFile(Game game, String user, String team) {
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("MM-dd");
+        String filename = ".\\overall\\" + team + "\\" + user + "-games.csv";
+        File newFile = new File(filename);
+        try {
+            if (!newFile.exists()) {
+                newFile.createNewFile();
+            }
+            FileWriter fw = new FileWriter(filename,true);
+            fw.write(game.getGame_id() + "|" + game.getGame_name() + "|" + game.isPs3_game() +
+                    "|" + game.isVita_game() + "|" + game.isPs4_game() +
+                    "|" + game.getTotal_trophies() + "|" + game.getGame_owners() +
+                    "|" + game.getUrl() + "|" + game.isPlat_game() +
+                    "|" + game.getStart_timestamp().format(DATE_FORMAT) +
+                    "|" + game.getEnd_thl_timestamp().format(DATE_FORMAT));
+            fw.write("\n");
+            fw.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     public static void main (String args[]){
         ScrapePSNPLog test = new ScrapePSNPLog();
 //        List<Game> games = new ArrayList<>();
-        String psn = "slammajamma28";
-        String team = "Dabaholics Anonymous";
+//        String psn = "slammajamma28";
+//        String team = "Dabaholics Anonymous";
+        String psn, team;
         // Slamma,slammajamma28,Dabaholics Anonymous,7577,104
         List<Trophy> trophies = new ArrayList<>();
         List<Integer> game_ids = new ArrayList<>();
         List<Game> games = new ArrayList<>();
         String line;
-//        try {
+        try {
 //            FileReader fr = new FileReader("participant_list");
-//            BufferedReader br = new BufferedReader(fr);
-//            while ((line = br.readLine()) != null) {
-//                if (line.substring(0, 1).equals("+")) {
-//                    // Do nothing
-//                } else {
-//                    List<String> id = Arrays.asList(line.split(","));
-//                    String psn = id.get(1);
-//                    String team = id.get(2).replaceAll(":","").replaceAll("?","");
-//                    int last_log = Integer.parseInt(id.get(3));
-//                    int first_log = Integer.parseInt(id.get(4));
+            FileReader fr = new FileReader("final_counting");
+            BufferedReader br = new BufferedReader(fr);
+            while ((line = br.readLine()) != null) {
+                if (line.substring(0, 1).equals("+")) {
+                    // Do nothing
+                } else {
+                    List<String> id = Arrays.asList(line.split(","));
+                    psn = id.get(1);
+                    team = id.get(2).replaceAll(":","").replaceAll("/?","");
+                    int last_log = Integer.parseInt(id.get(4));
+                    int first_log = Integer.parseInt(id.get(3));
                     System.out.println("Pulling log info for " + psn);
-//                    trophies = test.trophiesFromLog(psn, first_log, last_log);
-                    trophies = test.trophiesFromLog(psn, 7577, 8079);
+                    trophies = test.trophiesFromLog(psn, first_log, last_log);
+//                    trophies = test.trophiesFromLog(psn, 7577, 8079);
+//                    trophies = test.trophiesFromLog(psn, 8078, 8079);
                     System.out.println("Printing to file for " + psn);
                     for (Trophy trophy : trophies) {
-//                        test.writeToFile(trophy, psn, team);
-                        test.printTrophy(trophy);
+                        test.writeTrophyToFile(trophy, psn, team);
+//                        test.printTrophy(trophy);
                         if (! game_ids.contains(trophy.getGame_id())) {
                             game_ids.add(trophy.getGame_id());
                             games.add(new Game(trophy.getGame_id(), trophy.getGame_url()));
                         }
                     }
-                    System.out.println("\nNumber of unique games played by " + psn + ": " + games.size() + "\n");
-                    for (Game game : games) {
-                        System.out.println(game.getUrl());
-                    }
 
-                    ScrapePSNPProfile scrapePSNPProfile = new ScrapePSNPProfile();
-                    scrapePSNPProfile.checkForTHLGames(games, psn);
+                    System.out.println("\n****************************\n");
+
+                    System.out.println("\nNumber of unique games played by " + psn + ": " + games.size() + "\n");
+
+                    ScrapePSNPGamePage scrapePSNPGamePage = new ScrapePSNPGamePage();
+                    for (Game game : games) {
+                         Game full_game = scrapePSNPGamePage.pullGameInfo(game, psn);
+                         test.writeGameToFile(full_game, psn, team);
+//                         test.printGame(full_game);
+//                        System.out.println("\n****************************\n");
+                    }
 
                     System.out.println("\n****************************\n");
                     trophies = null;
-//                }
-//            }
-//        } catch (Exception e) {
-//                e.printStackTrace();
-//        }
+                }
+            }
+        } catch (Exception e) {
+                e.printStackTrace();
+        }
     }
 
     public void printTrophy(Trophy trophy) {
@@ -248,5 +272,22 @@ public class ScrapePSNPLog {
         System.out.println("Trophy rarity: " + trophy.getRarity_percentage() + " (" + trophy.getRarity_type() + ")");
         System.out.println("Trophy value: " + trophy.getTrophy_value());
         System.out.println("\n *************************** \n ");
+    }
+
+    public void printGame(Game game) {
+        System.out.println("Game ID #" + game.getGame_id());
+        System.out.println("Game Name: " + game.getGame_name());
+        System.out.println("Platforms: " + game.getPlatforms().toString());
+        System.out.println("Total Trophies: " + game.getTotal_trophies());
+        System.out.println("Owners: " + game.getGame_owners());
+//        System.out.println("Developer: " + game.getGame_dev());
+//        System.out.println("Publisher: " + game.getGame_publisher());
+//        System.out.println("Genere(s): " + game.getGenre().toString());
+//        System.out.println("Mode(s): " + game.getModes().toString());
+        System.out.println("PSNP URL: " + game.getUrl());
+        System.out.println("Platinum? " + game.isPlat_game());
+        System.out.println("Start Time: " + game.getStart_timestamp().toString());
+        System.out.println("End Time: " + game.getEnd_thl_timestamp().toString());
+
     }
 }
