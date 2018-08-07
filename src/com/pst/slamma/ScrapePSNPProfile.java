@@ -53,12 +53,13 @@ public class ScrapePSNPProfile {
                 Element game_id = info_things.getElement(0);
                 e_current_url = game_id.findFirst("<a>");
                 current_url = e_current_url.getAt("href");
+                System.out.println("Current url = " + current_url);
                 String tmp = current_url.substring(33);
                 List<String> tmp_splt = Arrays.asList(tmp.split("-"));
                 current_game_id = Integer.parseInt(tmp_splt.get(0));
                 // if THL game, access game page and pull info
                 if (unique_game_ids.contains(current_game_id)) {
-
+                    System.out.println("I am pulling info for " + current_game_id);
                 }
             }
 
