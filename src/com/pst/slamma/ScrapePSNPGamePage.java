@@ -3,6 +3,7 @@ package com.pst.slamma;
 import com.jaunt.*;
 import com.jaunt.component.Table;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Month;
 import java.time.format.DateTimeFormatter;
@@ -16,12 +17,11 @@ public class ScrapePSNPGamePage {
     private LocalDateTime NOW = LocalDateTime.now();
     private Month JULY = Month.JULY;
 
-    public boolean isGameComplete(int game_id, String psn) {
+    public boolean checkGameCompletion(Game game, String psn) {
         Element main_area;
         Element game_bar;
         Element base_game_bar;
-        String url = "https://psnprofiles.com/trophies/" + game_id + "/" + psn;
-
+        String url = game.getUrl() + psn;
         //Begin jaunt stuff
         try {
             UserAgent userAgent = new UserAgent();
@@ -33,7 +33,9 @@ public class ScrapePSNPGamePage {
             String completion_type = game_bar.getAt("class").trim();
 
             if (completion_type.equals("platinum") || completion_type.equals("completed")) {
-                return true;
+                System.out.println("Game completed: " + url);
+//                        game.setStarted_during_thl(true);
+                // Now check if it started before THL
             } else {
                 // If no platinum or completed, check to see if basegame bar exists
 
@@ -42,18 +44,50 @@ public class ScrapePSNPGamePage {
 
                 if (base_game_bar.findFirst("<span class='title'>").innerText().equals("Base Game")) {
                     if (base_game_bar.getAt("class").trim().equals("completed")) {
-                        return true;
+                        System.out.println("Base game completed: " + url);
+//                        game.setStarted_during_thl(true);
+                        // Now check if it started before THL
                     }
                 }
             }
         } catch (NotFound nf) {
             // Typically caught if this is a game without DLC
             // Indicates that the 100% hasn't been achieved on the base game
-            return false;
+            System.out.println("Game is incomplete: " + url);
+//            game.setStarted_during_thl(true);
         } catch (Exception e) {
             e.printStackTrace();
         }
+        System.out.println("Game is incomplete: " + url);
+        return false;
+//        game.setStarted_during_thl(true);
+    }
 
+    public boolean wasStartedBeforeTHL(UserAgent userAgent) {
+        Element backlog_box;
+
+        try {
+            backlog_box = userAgent.doc.findFirst("<div class='col-xs-4 col-xs-max-320'>").findFirst("<table class='box zebra'>");
+            try {
+                Elements backlog_rows = backlog_box.findEvery("<tr>");
+                for (Element row : backlog_rows) {
+                    Elements info = row.findEvery("<td>").getElement(0).findEvery("<td>");
+                    String date = info.findFirst("<nobr>").getChildText().trim().replaceAll("st","").replaceAll("nd","").replaceAll("rd", "").replaceAll("th","");
+                    LocalDate trophyDate = LocalDate.parse(date,DateTimeFormatter.ofPattern("d MMM yyyy"));
+                    if (trophyDate.isBefore(LocalDate.parse("01 Jun 2018",DateTimeFormatter.ofPattern("d MMM yyyy")))) {
+//                        game.setStarted_during_thl(false);
+                        return false;
+                    } else {
+//                        game.setStarted_during_thl(true);
+                        return true;
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        } catch (NotFound nfe) {
+            System.out.println("ERROR: Could not find backlog box");
+        }
         return false;
     }
 
@@ -248,8 +282,12 @@ public class ScrapePSNPGamePage {
 
     public static void main(String args[]) {
         ScrapePSNPGamePage test = new ScrapePSNPGamePage();
+        Game testGame = new Game(123,"https://psnprofiles.com/trophies/5050-doodle-devil/slammajamma28");
 
-
+//        test.checkGameCompletion("https://psnprofiles.com/trophies/6053-full-throttle-remastered/slammajamma28"); // Platinum, no DLC
+//        test.checkGameCompletion("https://psnprofiles.com/trophies/3154-never-alone/slammajamma28"); // Base 100% complete, DLC incomplete
+//        test.checkGameCompletion("https://psnprofiles.com/trophies/3725-kings-quest/slammajamma28"); // base incomplete, DLC incomplete
+        test.checkGameCompletion(testGame, "slammajamma28"); // Base 100% complete, no DLC
 
     }
 }

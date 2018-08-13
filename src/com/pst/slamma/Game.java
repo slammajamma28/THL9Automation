@@ -26,6 +26,7 @@ public class Game {
     private LocalDateTime start_timestamp;
     private LocalDateTime end_thl_timestamp;
     private int total_trophies;
+    private boolean started_during_thl;
     private boolean completed_during_thl;
 
     public Game(int a, String b) {
@@ -149,6 +150,10 @@ public class Game {
     public boolean isPs4_game() { return ps4_game; }
 
     public void setPs4_game(boolean ps4_game) { this.ps4_game = ps4_game; }
+
+    public boolean isStarted_during_thl() { return started_during_thl; }
+
+    public void setStarted_during_thl(boolean started_during_thl) { this.started_during_thl = started_during_thl; }
 
     public boolean isCompleted_during_thl() { return completed_during_thl; }
 
