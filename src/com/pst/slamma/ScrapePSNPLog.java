@@ -194,11 +194,15 @@ public class ScrapePSNPLog {
                     "|" + game.getTotal_trophies() + "|" + game.getGame_owners() +
                     "|" + game.getUrl() + "|" + game.isPlat_game() +
                     "|" + game.getStart_timestamp().format(DATE_FORMAT) +
-                    "|" + game.getEnd_thl_timestamp().format(DATE_FORMAT));
+                    "|" + game.getEnd_thl_timestamp().format(DATE_FORMAT) +
+                    "|" + game.isStarted_during_thl() +
+                    "|" + game.isCompleted_during_thl()
+            );
             fw.write("\n");
             fw.close();
         } catch (Exception e) {
             e.printStackTrace();
+            System.out.println("Issue is with " + game.getUrl());
         }
     }
 
@@ -254,6 +258,8 @@ public class ScrapePSNPLog {
 
                     System.out.println("\n****************************\n");
                     trophies = null;
+                    games=new ArrayList<>();
+                    game_ids=new ArrayList<>();
                 }
             }
         } catch (Exception e) {
@@ -288,6 +294,9 @@ public class ScrapePSNPLog {
         System.out.println("Platinum? " + game.isPlat_game());
         System.out.println("Start Time: " + game.getStart_timestamp().toString());
         System.out.println("End Time: " + game.getEnd_thl_timestamp().toString());
+        System.out.println("Started during THL: " + game.isStarted_during_thl());
+        System.out.println("Completed during THL: " + game.isCompleted_during_thl());
+        System.out.println("\n *************************** \n ");
 
     }
 }

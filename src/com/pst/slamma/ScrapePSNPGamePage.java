@@ -17,14 +17,14 @@ public class ScrapePSNPGamePage {
     private LocalDateTime NOW = LocalDateTime.now();
     private Month JULY = Month.JULY;
 
-    public boolean checkGameCompletion(Game game, String psn) {
+    public void checkGameCompletion(Game game, String psn) {
         Element main_area;
         Element game_bar;
         Element base_game_bar;
         String url = game.getUrl() + psn;
+        UserAgent userAgent = new UserAgent();
         //Begin jaunt stuff
         try {
-            UserAgent userAgent = new UserAgent();
             userAgent.visit(url);
 
             // Check for platinum in main bar
@@ -32,10 +32,12 @@ public class ScrapePSNPGamePage {
             game_bar = main_area.findFirst("<tr>");
             String completion_type = game_bar.getAt("class").trim();
 
-            if (completion_type.equals("platinum") || completion_type.equals("completed")) {
-                System.out.println("Game completed: " + url);
-//                        game.setStarted_during_thl(true);
-                // Now check if it started before THL
+            if (completion_type.equals("platinum")) {
+//                System.out.println("Game platinumed: " + url);
+                game.setCompleted_during_thl(wasPlatinumDuringTHL(userAgent));
+            } else if (completion_type.equals("completed")) {
+//                System.out.println("Game 100%: " + url);
+                game.setCompleted_during_thl(wasCompeletedDuringTHL(userAgent));
             } else {
                 // If no platinum or completed, check to see if basegame bar exists
 
@@ -44,23 +46,24 @@ public class ScrapePSNPGamePage {
 
                 if (base_game_bar.findFirst("<span class='title'>").innerText().equals("Base Game")) {
                     if (base_game_bar.getAt("class").trim().equals("completed")) {
-                        System.out.println("Base game completed: " + url);
-//                        game.setStarted_during_thl(true);
-                        // Now check if it started before THL
+//                        System.out.println("Base game completed: " + url);
+                        game.setCompleted_during_thl(wasCompeletedDuringTHL(userAgent));
                     }
+                } else {
+//                    System.out.println("Game is incomplete: " + url);
+                    game.setCompleted_during_thl(false);
                 }
             }
         } catch (NotFound nf) {
             // Typically caught if this is a game without DLC
             // Indicates that the 100% hasn't been achieved on the base game
-            System.out.println("Game is incomplete: " + url);
-//            game.setStarted_during_thl(true);
+//            System.out.println("Game is incomplete: " + url);
+            game.setCompleted_during_thl(false);
         } catch (Exception e) {
             e.printStackTrace();
         }
-        System.out.println("Game is incomplete: " + url);
-        return false;
-//        game.setStarted_during_thl(true);
+
+        game.setStarted_during_thl(!wasStartedBeforeTHL(userAgent));
     }
 
     public boolean wasStartedBeforeTHL(UserAgent userAgent) {
@@ -69,22 +72,84 @@ public class ScrapePSNPGamePage {
         try {
             backlog_box = userAgent.doc.findFirst("<div class='col-xs-4 col-xs-max-320'>").findFirst("<table class='box zebra'>");
             try {
-                Elements backlog_rows = backlog_box.findEvery("<tr>");
-                for (Element row : backlog_rows) {
-                    Elements info = row.findEvery("<td>").getElement(0).findEvery("<td>");
+                Element info = backlog_box.findFirst("<tr>").findFirst("<span class='typo-top-date'>");
+                String date = info.findFirst("<nobr>").getChildText().trim().replaceAll("st","").replaceAll("nd","").replaceAll("rd", "").replaceAll("th","");
+                LocalDate trophyDate = LocalDate.parse(date,DateTimeFormatter.ofPattern("d MMM yyyy"));
+                if (trophyDate.isBefore(LocalDate.parse("01 Jun 2018",DateTimeFormatter.ofPattern("d MMM yyyy")))) {
+                    return true;
+                }
+            } catch (Exception e) {
+//                e.printStackTrace();
+                System.out.println("Missing time stamp, I think: " + userAgent.getLocation());
+            }
+        } catch (NotFound nfe) {
+            System.out.println("ERROR: Could not find backlog box");
+        }
+        return false;
+    }
+
+    public boolean wasCompeletedDuringTHL(UserAgent userAgent) {
+        Element backlog_box;
+
+        try {
+            backlog_box = userAgent.doc.findFirst("<div class='col-xs-4 col-xs-max-320'>").findFirst("<table class='box zebra'>");
+            Elements backlog_rows = backlog_box.findEvery("<tr>");
+            for (Element row : backlog_rows) {
+                if (row.findFirst("<span class='small-title'>").getChildText().trim().equals("100%")) {
+                    Element info = row.findFirst("<span class='typo-top-date'>");
                     String date = info.findFirst("<nobr>").getChildText().trim().replaceAll("st","").replaceAll("nd","").replaceAll("rd", "").replaceAll("th","");
                     LocalDate trophyDate = LocalDate.parse(date,DateTimeFormatter.ofPattern("d MMM yyyy"));
-                    if (trophyDate.isBefore(LocalDate.parse("01 Jun 2018",DateTimeFormatter.ofPattern("d MMM yyyy")))) {
-//                        game.setStarted_during_thl(false);
+                    if (trophyDate.isAfter(LocalDate.parse("31 Jul 2018",DateTimeFormatter.ofPattern("d MMM yyyy")))) {
+                        return false;
+                    } else if (trophyDate.isBefore(LocalDate.parse("01 Jul 2018",DateTimeFormatter.ofPattern("d MMM yyyy")))) {
                         return false;
                     } else {
-//                        game.setStarted_during_thl(true);
                         return true;
                     }
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
             }
+        } catch (Exception e) {
+            System.out.println("Issue with backlog box, trying trophy list instead");
+        }
+
+        try {
+            Element trophy_area = userAgent.doc.findFirst("<div class='col-xs'>").findFirst("<div class='box no-top-border");
+            Elements trophy_rows = trophy_area.findEvery("<tr>");
+            for (Element row : trophy_rows) {
+                try {
+                    String date = row.findFirst("<nobr>").getChildText().trim().replaceAll("st","").replaceAll("nd","").replaceAll("rd", "").replaceAll("th","");
+                    LocalDate trophyDate = LocalDate.parse(date,DateTimeFormatter.ofPattern("d MMM yyyy"));
+                    if (trophyDate.isAfter(LocalDate.parse("31 Jul 2018",DateTimeFormatter.ofPattern("d MMM yyyy")))) {
+                        return false;
+                    }
+                } catch (NotFound nf) {
+                    System.out.println("This is a non-plat with DLC: " + userAgent.getLocation());
+                }
+            }
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("Issue with " + userAgent.getLocation());
+        }
+        return false;
+    }
+
+    public boolean wasPlatinumDuringTHL(UserAgent userAgent) {
+        Elements completed_rows;
+        Element platinum_trophy;
+        try {
+            platinum_trophy= userAgent.doc.findFirst("<div class='col-xs'>").findEvery("<tr class='completed'>").getElement(0);
+//            for (Element row : completed_rows) {
+                String date = platinum_trophy.findFirst("<nobr>").getChildText().trim().replaceAll("st","").replaceAll("nd","").replaceAll("rd", "").replaceAll("th","");
+                LocalDate trophyDate = LocalDate.parse(date,DateTimeFormatter.ofPattern("d MMM yyyy"));
+                if (trophyDate.isBefore(LocalDate.parse("01 Jul 2018",DateTimeFormatter.ofPattern("d MMM yyyy")))) {
+                    return false;
+                } else if (trophyDate.isAfter(LocalDate.parse("31 Jul 2018",DateTimeFormatter.ofPattern("d MMM yyyy")))) {
+                    return false;
+                } else {
+                    return true;
+                }
+//            }
         } catch (NotFound nfe) {
             System.out.println("ERROR: Could not find backlog box");
         }
@@ -241,7 +306,7 @@ public class ScrapePSNPGamePage {
 //        }
 
         try {
-            Element main_part =userAgent.doc.findFirst("<div class='col-xs'>").findFirst("<div class='box no-top-border'>");
+            Element main_part = userAgent.doc.findFirst("<div class='col-xs'>").findFirst("<div class='box no-top-border'>");
             trophies = main_part.findEvery("<tr class='completed'>");
             Element start_date = trophies.getElement(0).findEvery("<td>").getElement(2).findEvery("<nobr>");
 //            System.out.println("Start: " + start_date.getElement(0).getChildText().trim().replaceAll("st","").replaceAll("nd","").replaceAll("rd", "").replaceAll("th","")
@@ -260,6 +325,7 @@ public class ScrapePSNPGamePage {
                 }
             }
 
+
         } catch (Exception e) {
             e.printStackTrace();
             System.out.println("Error with trophies for " + game.getUrl());
@@ -277,17 +343,25 @@ public class ScrapePSNPGamePage {
 //    private String game_publisher;
 //    private List<String> genre;
 //    private List<String> modes;
+
+        checkGameCompletion(game, psn);
+
         return game;
     }
 
     public static void main(String args[]) {
         ScrapePSNPGamePage test = new ScrapePSNPGamePage();
-        Game testGame = new Game(123,"https://psnprofiles.com/trophies/5050-doodle-devil/slammajamma28");
-
+//        Game testGame = new Game(123,"https://psnprofiles.com/trophies/5050-doodle-devil/");
+//        Game testGame = new Game(123,"https://psnprofiles.com/trophies/5442-battlefield-1/");
+//        Game testGame = new Game(123,"https://psnprofiles.com/trophies/2647-pixeljunk-shooter-ultimate/");
+        Game testGame = new Game(123,"https://psnprofiles.com/trophies/1486-metal-gear-solid-3/");
 //        test.checkGameCompletion("https://psnprofiles.com/trophies/6053-full-throttle-remastered/slammajamma28"); // Platinum, no DLC
 //        test.checkGameCompletion("https://psnprofiles.com/trophies/3154-never-alone/slammajamma28"); // Base 100% complete, DLC incomplete
 //        test.checkGameCompletion("https://psnprofiles.com/trophies/3725-kings-quest/slammajamma28"); // base incomplete, DLC incomplete
-        test.checkGameCompletion(testGame, "slammajamma28"); // Base 100% complete, no DLC
-
+        test.pullGameInfo(testGame, "SAVENGER"); // Base 100% complete, no DLC
+//            System.out.println("Started during THL? " + testGame.isStarted_during_thl());
+//            System.out.println("Completed during THL? " + testGame.isCompleted_during_thl());
+        System.out.println("Start Time: " + testGame.getStart_timestamp().toString());
+        System.out.println("End Time: " + testGame.getEnd_thl_timestamp().toString());
     }
 }
